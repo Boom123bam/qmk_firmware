@@ -3,8 +3,14 @@
 
 #include QMK_KEYBOARD_H
 
+bool is_scrolling = false;
+static uint16_t scroll_timer = 0;
+uint16_t scroll_delay = 20;  // Adjust this value to change scroll speed (higher = slower)
+
+
 enum custom_keycodes {
-    KC_EDIT = SAFE_RANGE
+    KC_EDIT = SAFE_RANGE,
+    KC_SCROLL,
 };
 
 enum {
@@ -28,7 +34,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         _______,    _______,    _______,    _______,    _______,    _______,
         _______,    _______,    _______,    _______,    _______,    _______,
         _______,    _______,    _______,    _______,    KC_EDIT,    _______,
-        _______,    _______,    _______,    _______,    _______,    _______
+        _______,    _______,    _______,    _______,    _______,    KC_SCROLL
     )
 
 };
@@ -41,6 +47,9 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 wait_ms(15);
                 register_code(KC_D);
                 return false;
+            case KC_SCROLL:
+            is_scrolling = true;
+            return false;
         }
     }
     return true;
@@ -52,6 +61,17 @@ void post_process_record_user(uint16_t keycode, keyrecord_t *record) {
             case KC_EDIT:
                 unregister_code(KC_D);
                 break;
+            case KC_SCROLL:
+            is_scrolling = false;
         }
     }
+}
+
+void matrix_scan_user(void) { // The very important timer.
+    if (is_scrolling) {
+            if (timer_elapsed(scroll_timer) > scroll_delay) {
+                tap_code(MS_WHLD);
+                scroll_timer = timer_read();
+            }
+        }
 }
